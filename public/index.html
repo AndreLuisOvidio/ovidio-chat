@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chat Simples</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="chat-container" style="display: none;">
+        <div id="user-list">
+            <h3>Usuários</h3>
+            <ul id="users"></ul>
+        </div>
+        <div id="chat">
+            <ul id="messages"></ul>
+            <form id="chat-form">
+                <input id="message-input" type="text" autocomplete="off" placeholder="Digite sua mensagem..." />
+                <button>Enviar</button>
+            </form>
+        </div>
+    </div>
+    <div id="prompt-overlay" class="prompt-overlay">
+        <div class="prompt-box">
+            <h3>Acesso ao Chat</h3>
+            <input type="password" id="password-input" placeholder="Digite a senha">
+            <button id="submit-password">Entrar</button>
+        </div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
