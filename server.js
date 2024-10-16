@@ -8,18 +8,13 @@ const webpush = require('web-push');
 const fs = require('fs');
 
 // Configuração do Web Push
-let vapidKeys;
-const vapidKeysFile = path.join(__dirname, 'vapid-keys.json');
-
-if (fs.existsSync(vapidKeysFile)) {
-  vapidKeys = JSON.parse(fs.readFileSync(vapidKeysFile));
-} else {
-  vapidKeys = webpush.generateVAPIDKeys();
-  fs.writeFileSync(vapidKeysFile, JSON.stringify(vapidKeys));
-}
+const vapidKeys = {
+  publicKey: 'BORqFed0xoUxTkJo_mpsokdAjWz_DyRkU_3xToT3gOivE8sMthgMmyCw9Q8b5Ev0hzV-ZGqLMCKzivScdvQHCZA',
+  privateKey: 'BBdqUJilkIe1G1k397wmKo5QGFME4ZhixrcX2VFjvmA'
+};
 
 webpush.setVapidDetails(
-  'mailto:seu-email@exemplo.com',
+  'mailto:andre@ovidio.dev', // Substitua pelo seu e-mail real
   vapidKeys.publicKey,
   vapidKeys.privateKey
 );
