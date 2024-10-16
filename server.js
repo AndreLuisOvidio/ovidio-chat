@@ -1,7 +1,12 @@
 const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
-const io = require('socket.io')(http);
+const io = require('socket.io')(http, {
+  cors: {
+    origin: "https://chat.ovidio.dev",
+    methods: ["GET", "POST"]
+  }
+});
 const { Sequelize, DataTypes } = require('sequelize');
 const path = require('path');
 const webpush = require('web-push');
@@ -82,6 +87,12 @@ app.post('/checkSubscription', (req, res) => {
 });
 
 io.on('connection', (socket) => {
+  console.log('Nova conexão Socket.IO:', socket.id);
+  
+  socket.on('disconnect', (reason) => {
+    console.log('Desconexão Socket.IO:', socket.id, 'Razão:', reason);
+  });
+
   console.log('Um usuário se conectou');
   let currentUser;
 

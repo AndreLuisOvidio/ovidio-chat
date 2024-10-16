@@ -317,4 +317,9 @@ socket.on('user list', (users) => {
     updateUserList(users);
 });
 
+socket.on('connect_error', (error) => {
+  console.error('Erro de conexão Socket.IO:', error);
+  addMessage(`Erro de conexão: ${error.message}. Tentando reconectar...`);
+});
+
 addMessage('Bem-vindo ao chat!');

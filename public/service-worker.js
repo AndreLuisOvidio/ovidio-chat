@@ -32,3 +32,7 @@ self.addEventListener('install', function(event) {
 self.addEventListener('activate', function(event) {
   console.log('Service Worker ativado');
 });
+
+self.addEventListener('updatefound', function() {
+  console.log('Nova versão do Service Worker encontrada');
+});
