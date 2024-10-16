@@ -74,9 +74,13 @@ async function registerServiceWorker() {
 
 async function subscribeToPush(swRegistration) {
   try {
+    const response = await fetch('/vapidPublicKey');
+    const vapidPublicKey = await response.json();
+    console.log('Chave pública VAPID recebida:', vapidPublicKey.publicKey);
+
     const subscription = await swRegistration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: 'BLBx-hxPOZ7KSBYFdxZ9nPbh9mhc9KKLUzOFzLO_j9xRCch1_NXfQEzwFdqKSX8rYNEh4vvqVyEYZUlA5dF2xQA'
+      applicationServerKey: vapidPublicKey.publicKey
     });
     console.log('Push Notification Subscription:', subscription);
 
@@ -109,11 +113,20 @@ async function setupPushNotifications() {
     const vapidPublicKey = await response.json();
     console.log('Chave pública VAPID recebida:', vapidPublicKey.publicKey);
 
-    const subscription = await swRegistration.pushManager.subscribe({
+    // Verificar se já existe uma inscrição
+    let subscription = await swRegistration.pushManager.getSubscription();
+    if (subscription) {
+      // Se existe, cancelar a inscrição existente
+      await subscription.unsubscribe();
+      console.log('Inscrição existente cancelada');
+    }
+
+    // Criar uma nova inscrição
+    subscription = await swRegistration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: vapidPublicKey.publicKey
     });
-    console.log('Push Notification Subscription:', subscription);
+    console.log('Nova Push Notification Subscription:', subscription);
 
     await fetch(`/subscribe?userName=${encodeURIComponent(userName)}`, {
       method: 'POST',
