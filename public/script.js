@@ -56,6 +56,46 @@ async function requestNotificationPermission() {
     }
 }
 
+async function registerServiceWorker() {
+  if ('serviceWorker' in navigator && 'PushManager' in window) {
+    try {
+      const registration = await navigator.serviceWorker.register('/service-worker.js');
+      console.log('Service Worker registrado com sucesso:', registration);
+      return registration;
+    } catch (error) {
+      console.error('Falha ao registrar o Service Worker:', error);
+    }
+  }
+}
+
+async function subscribeToPush(swRegistration) {
+  try {
+    const subscription = await swRegistration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: 'BLBx-hxPOZ7KSBYFdxZ9nPbh9mhc9KKLUzOFzLO_j9xRCch1_NXfQEzwFdqKSX8rYNEh4vvqVyEYZUlA5dF2xQA'
+    });
+    console.log('Push Notification Subscription:', subscription);
+
+    await fetch(`/subscribe?userName=${encodeURIComponent(userName)}`, {
+      method: 'POST',
+      body: JSON.stringify(subscription),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    console.log('Inscrição de push enviada para o servidor');
+  } catch (error) {
+    console.error('Falha ao se inscrever para notificações push:', error);
+  }
+}
+
+async function setupPushNotifications() {
+  const swRegistration = await registerServiceWorker();
+  if (swRegistration) {
+    await subscribeToPush(swRegistration);
+  }
+}
+
 async function login() {
     let password = localStorage.getItem('chatPassword');
     let storedUserName = localStorage.getItem('chatUserName');
@@ -85,6 +125,8 @@ async function login() {
 
     document.getElementById('chat-container').style.display = 'flex';
     socket.emit('user login', userName);
+
+    await setupPushNotifications();
 
     const notificationsEnabled = await requestNotificationPermission();
     if (!notificationsEnabled) {

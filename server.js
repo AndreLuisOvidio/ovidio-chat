@@ -4,6 +4,15 @@ const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const { Sequelize, DataTypes } = require('sequelize');
 const path = require('path');
+const webpush = require('web-push');
+
+// Configuração do Web Push
+const vapidKeys = webpush.generateVAPIDKeys();
+webpush.setVapidDetails(
+  'mailto:seu-email@exemplo.com',
+  vapidKeys.publicKey,
+  vapidKeys.privateKey
+);
 
 // Configuração do Sequelize com SQLite
 const sequelize = new Sequelize({
@@ -46,6 +55,17 @@ sequelize.sync()
   .catch(err => console.error('Erro ao sincronizar o banco de dados:', err));
 
 app.use(express.static('public'));
+app.use(express.json());
+
+// Armazenar as inscrições de push
+const pushSubscriptions = new Map();
+
+app.post('/subscribe', (req, res) => {
+  const subscription = req.body;
+  const userName = req.query.userName;
+  pushSubscriptions.set(userName, subscription);
+  res.status(201).json({});
+});
 
 io.on('connection', (socket) => {
   console.log('Um usuário se conectou');
@@ -84,6 +104,19 @@ io.on('connection', (socket) => {
       
       // Emite a mensagem para todos os clientes conectados
       io.emit('chat message', `${savedMessage.userName}: ${savedMessage.content}`);
+
+      // Envia notificação push para todos os usuários inscritos, exceto o remetente
+      for (const [subscriptionUserName, subscription] of pushSubscriptions) {
+        if (subscriptionUserName !== userName) {
+          const payload = JSON.stringify({
+            title: 'Nova mensagem no chat',
+            body: `${userName}: ${content}`
+          });
+          webpush.sendNotification(subscription, payload).catch(error => {
+            console.error('Erro ao enviar notificação:', error);
+          });
+        }
+      }
     } catch (error) {
       console.error('Erro ao salvar a mensagem:', error);
     }
