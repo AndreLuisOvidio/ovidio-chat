@@ -5,14 +5,26 @@ const io = require('socket.io')(http);
 const { Sequelize, DataTypes } = require('sequelize');
 const path = require('path');
 const webpush = require('web-push');
+const fs = require('fs');
 
 // Configuração do Web Push
-const vapidKeys = webpush.generateVAPIDKeys();
+let vapidKeys;
+const vapidKeysFile = path.join(__dirname, 'vapid-keys.json');
+
+if (fs.existsSync(vapidKeysFile)) {
+  vapidKeys = JSON.parse(fs.readFileSync(vapidKeysFile));
+} else {
+  vapidKeys = webpush.generateVAPIDKeys();
+  fs.writeFileSync(vapidKeysFile, JSON.stringify(vapidKeys));
+}
+
 webpush.setVapidDetails(
   'mailto:seu-email@exemplo.com',
   vapidKeys.publicKey,
   vapidKeys.privateKey
 );
+
+console.log('Chave pública VAPID:', vapidKeys.publicKey);
 
 // Configuração do Sequelize com SQLite
 const sequelize = new Sequelize({
@@ -137,6 +149,11 @@ io.on('connection', (socket) => {
     }
     console.log('Um usuário se desconectou');
   });
+});
+
+// Adicione esta nova rota para fornecer a chave pública ao cliente
+app.get('/vapidPublicKey', (req, res) => {
+  res.json({ publicKey: vapidKeys.publicKey });
 });
 
 const PORT = process.env.PORT || 8085;

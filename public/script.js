@@ -104,9 +104,14 @@ async function setupPushNotifications() {
     const swRegistration = await navigator.serviceWorker.register('/service-worker.js');
     console.log('Service Worker registrado com sucesso:', swRegistration);
 
+    // Obter a chave pública VAPID do servidor
+    const response = await fetch('/vapidPublicKey');
+    const vapidPublicKey = await response.json();
+    console.log('Chave pública VAPID recebida:', vapidPublicKey.publicKey);
+
     const subscription = await swRegistration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: 'BLBx-hxPOZ7KSBYFdxZ9nPbh9mhc9KKLUzOFzLO_j9xRCch1_NXfQEzwFdqKSX8rYNEh4vvqVyEYZUlA5dF2xQA'
+      applicationServerKey: vapidPublicKey.publicKey
     });
     console.log('Push Notification Subscription:', subscription);
 
