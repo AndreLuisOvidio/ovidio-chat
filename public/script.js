@@ -94,9 +94,34 @@ async function subscribeToPush(swRegistration) {
 }
 
 async function setupPushNotifications() {
-  const swRegistration = await registerServiceWorker();
-  if (swRegistration) {
-    await subscribeToPush(swRegistration);
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    console.log('Push notifications não são suportadas');
+    addMessage('Seu navegador não suporta notificações push.');
+    return;
+  }
+
+  try {
+    const swRegistration = await navigator.serviceWorker.register('/service-worker.js');
+    console.log('Service Worker registrado com sucesso:', swRegistration);
+
+    const subscription = await swRegistration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: 'BLBx-hxPOZ7KSBYFdxZ9nPbh9mhc9KKLUzOFzLO_j9xRCch1_NXfQEzwFdqKSX8rYNEh4vvqVyEYZUlA5dF2xQA'
+    });
+    console.log('Push Notification Subscription:', subscription);
+
+    await fetch(`/subscribe?userName=${encodeURIComponent(userName)}`, {
+      method: 'POST',
+      body: JSON.stringify(subscription),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    console.log('Inscrição de push enviada para o servidor');
+    addMessage('Notificações push configuradas com sucesso.');
+  } catch (error) {
+    console.error('Erro ao configurar notificações push:', error);
+    addMessage(`Erro ao configurar notificações push: ${error.message}`);
   }
 }
 
@@ -195,13 +220,32 @@ function showNotification(message) {
     if ('Notification' in window) {
         if (Notification.permission === 'granted') {
             try {
-                new Notification('Nova mensagem no chat', {
-                    body: message,
-                    icon: '/icon.png'
-                });
+                // Verifique se estamos em um contexto seguro
+                if (window.isSecureContext) {
+                    new Notification('Nova mensagem no chat', {
+                        body: message,
+                        icon: '/icon.png'
+                    });
+                } else {
+                    console.error('Contexto não seguro: As notificações requerem HTTPS');
+                    addMessage('Erro: As notificações requerem uma conexão segura (HTTPS).');
+                }
             } catch (error) {
                 console.error('Erro ao mostrar notificação:', error);
                 addMessage(`Erro ao mostrar notificação: ${error.message}`);
+                
+                // Tente usar o serviceWorker para mostrar a notificação
+                if ('serviceWorker' in navigator && 'PushManager' in window) {
+                    navigator.serviceWorker.ready.then(registration => {
+                        registration.showNotification('Nova mensagem no chat', {
+                            body: message,
+                            icon: '/icon.png'
+                        }).catch(err => {
+                            console.error('Erro ao mostrar notificação via Service Worker:', err);
+                            addMessage(`Erro ao mostrar notificação via Service Worker: ${err.message}`);
+                        });
+                    });
+                }
             }
         } else if (Notification.permission === 'denied') {
             console.log('Notificações foram negadas pelo usuário');
