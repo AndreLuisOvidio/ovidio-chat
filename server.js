@@ -74,6 +74,13 @@ app.post('/subscribe', (req, res) => {
   res.status(201).json({});
 });
 
+app.post('/checkSubscription', (req, res) => {
+  const subscription = req.body;
+  // Aqui você pode adicionar lógica adicional para verificar a validade da inscrição
+  // Por enquanto, vamos apenas retornar OK
+  res.status(200).json({ valid: true });
+});
+
 io.on('connection', (socket) => {
   console.log('Um usuário se conectou');
   let currentUser;
@@ -119,7 +126,7 @@ io.on('connection', (socket) => {
             title: 'Nova mensagem no chat',
             body: `${userName}: ${content}`
           });
-          console.log(`Enviando notificação push para ${subscriptionUserName}`);
+          console.log(`Tentando enviar notificação push para ${subscriptionUserName}`);
           webpush.sendNotification(subscription, payload)
             .then(() => console.log(`Notificação enviada com sucesso para ${subscriptionUserName}`))
             .catch(error => {

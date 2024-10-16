@@ -51,11 +51,11 @@ async function requestNotificationPermission() {
         return true;
     } else if (permission === 'denied') {
         console.log('Permissão para notificações negada');
-        // addMessage('As notificações foram negadas. Você pode não receber alertas de novas mensagens.');
+        addMessage('As notificações foram negadas. Você pode não receber alertas de novas mensagens.');
         return false;
     } else {
         console.log('Permissão para notificações não foi decidida');
-        // addMessage('Por favor, permita as notificações para receber alertas de novas mensagens.');
+        addMessage('Por favor, permita as notificações para receber alertas de novas mensagens.');
         return false;
     }
 }
@@ -100,7 +100,7 @@ async function subscribeToPush(swRegistration) {
 async function setupPushNotifications() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
     console.log('Push notifications não são suportadas');
-    // addMessage('Seu navegador não suporta notificações push.');
+    addMessage('Seu navegador não suporta notificações push.');
     return;
   }
 
@@ -116,17 +116,32 @@ async function setupPushNotifications() {
     // Verificar se já existe uma inscrição
     let subscription = await swRegistration.pushManager.getSubscription();
     if (subscription) {
-      // Se existe, cancelar a inscrição existente
-      await subscription.unsubscribe();
-      console.log('Inscrição existente cancelada');
+      console.log('Inscrição existente encontrada:', subscription);
+      // Verificar se a inscrição ainda é válida
+      try {
+        await fetch('/checkSubscription', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(subscription),
+        });
+        console.log('Inscrição existente ainda é válida');
+      } catch (error) {
+        console.log('Inscrição existente não é mais válida, cancelando...');
+        await subscription.unsubscribe();
+        subscription = null;
+      }
     }
 
-    // Criar uma nova inscrição
-    subscription = await swRegistration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: vapidPublicKey.publicKey
-    });
-    console.log('Nova Push Notification Subscription:', subscription);
+    if (!subscription) {
+      // Criar uma nova inscrição
+      subscription = await swRegistration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: vapidPublicKey.publicKey
+      });
+      console.log('Nova Push Notification Subscription:', subscription);
+    }
 
     await fetch(`/subscribe?userName=${encodeURIComponent(userName)}`, {
       method: 'POST',
@@ -136,10 +151,10 @@ async function setupPushNotifications() {
       }
     });
     console.log('Inscrição de push enviada para o servidor');
-    // addMessage('Notificações push configuradas com sucesso.');
+    addMessage('Notificações push configuradas com sucesso.');
   } catch (error) {
     console.error('Erro ao configurar notificações push:', error);
-    // addMessage(`Erro ao configurar notificações push: ${error.message}`);
+    addMessage(`Erro ao configurar notificações push: ${error.message}`);
   }
 }
 
@@ -177,7 +192,7 @@ async function login() {
 
     const notificationsEnabled = await requestNotificationPermission();
     if (!notificationsEnabled) {
-        // addMessage('Aviso: As notificações estão desativadas. Você pode não receber alertas de novas mensagens.');
+        addMessage('Aviso: As notificações estão desativadas. Você pode não receber alertas de novas mensagens.');
     }
 }
 
@@ -246,11 +261,11 @@ function showNotification(message) {
                     });
                 } else {
                     console.error('Contexto não seguro: As notificações requerem HTTPS');
-                    // addMessage('Erro: As notificações requerem uma conexão segura (HTTPS).');
+                    addMessage('Erro: As notificações requerem uma conexão segura (HTTPS).');
                 }
             } catch (error) {
                 console.error('Erro ao mostrar notificação:', error);
-                // addMessage(`Erro ao mostrar notificação: ${error.message}`);
+                addMessage(`Erro ao mostrar notificação: ${error.message}`);
                 
                 // Tente usar o serviceWorker para mostrar a notificação
                 if ('serviceWorker' in navigator && 'PushManager' in window) {
@@ -260,7 +275,7 @@ function showNotification(message) {
                             icon: '/icon.png'
                         }).catch(err => {
                             console.error('Erro ao mostrar notificação via Service Worker:', err);
-                            // addMessage(`Erro ao mostrar notificação via Service Worker: ${err.message}`);
+                            addMessage(`Erro ao mostrar notificação via Service Worker: ${err.message}`);
                         });
                     });
                 }
@@ -277,7 +292,7 @@ function showNotification(message) {
         }
     } else {
         console.log('Este navegador não suporta notificações de desktop');
-        // addMessage('Seu navegador não suporta notificações de desktop.');
+        addMessage('Seu navegador não suporta notificações de desktop.');
     }
 }
 
