@@ -112,9 +112,16 @@ io.on('connection', (socket) => {
             title: 'Nova mensagem no chat',
             body: `${userName}: ${content}`
           });
-          webpush.sendNotification(subscription, payload).catch(error => {
-            console.error('Erro ao enviar notificação:', error);
-          });
+          console.log(`Enviando notificação push para ${subscriptionUserName}`);
+          webpush.sendNotification(subscription, payload)
+            .then(() => console.log(`Notificação enviada com sucesso para ${subscriptionUserName}`))
+            .catch(error => {
+              console.error(`Erro ao enviar notificação para ${subscriptionUserName}:`, error);
+              if (error.statusCode === 410) {
+                console.log(`Removendo inscrição expirada para ${subscriptionUserName}`);
+                pushSubscriptions.delete(subscriptionUserName);
+              }
+            });
         }
       }
     } catch (error) {

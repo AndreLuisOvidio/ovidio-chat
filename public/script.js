@@ -42,7 +42,6 @@ async function requestNotificationPermission() {
 
     let permission = Notification.permission;
 
-    console.log(permission);
     if (permission === 'default') {
         permission = await Notification.requestPermission();
     }
@@ -50,8 +49,13 @@ async function requestNotificationPermission() {
     if (permission === 'granted') {
         console.log('Permissão para notificações concedida');
         return true;
-    } else {
+    } else if (permission === 'denied') {
         console.log('Permissão para notificações negada');
+        addMessage('As notificações foram negadas. Você pode não receber alertas de novas mensagens.');
+        return false;
+    } else {
+        console.log('Permissão para notificações não foi decidida');
+        addMessage('Por favor, permita as notificações para receber alertas de novas mensagens.');
         return false;
     }
 }
@@ -188,19 +192,30 @@ document.getElementById('chat-form').addEventListener('submit', (e) => {
 });
 
 function showNotification(message) {
-    if ('Notification' in window && Notification.permission === 'granted') {
-        try {
-            new Notification('Nova mensagem no chat', {
-                body: message,
-                icon: '/icon.png' // Certifique-se de que este ícone existe na pasta 'public'
+    if ('Notification' in window) {
+        if (Notification.permission === 'granted') {
+            try {
+                new Notification('Nova mensagem no chat', {
+                    body: message,
+                    icon: '/icon.png'
+                });
+            } catch (error) {
+                console.error('Erro ao mostrar notificação:', error);
+                addMessage(`Erro ao mostrar notificação: ${error.message}`);
+            }
+        } else if (Notification.permission === 'denied') {
+            console.log('Notificações foram negadas pelo usuário');
+            addMessage('As notificações estão desativadas. Você pode não receber alertas de novas mensagens.');
+        } else {
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    showNotification(message);
+                }
             });
-        } catch (error) {
-            console.error('Erro ao mostrar notificação:', error);
-            addMessage('Erro ao mostrar notificação. Verifique se você está usando HTTPS ou se as notificações estão habilitadas no seu navegador.');
         }
-    } else if (Notification.permission === 'denied') {
-        console.log('Notificações foram negadas pelo usuário');
-        addMessage('As notificações estão desativadas. Você pode não receber alertas de novas mensagens.');
+    } else {
+        console.log('Este navegador não suporta notificações de desktop');
+        addMessage('Seu navegador não suporta notificações de desktop.');
     }
 }
 
